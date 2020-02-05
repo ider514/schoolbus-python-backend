@@ -1,8 +1,11 @@
-from flask import Flask, jsonify, json, request
+from flask import Flask, jsonify, json, request, render_template, abort, Blueprint
 from flask_cors import CORS
 from pymongo import MongoClient
 import requests
 from datetime import datetime
+from jinja2 import TemplateNotFound
+
+sample_page = Blueprint('sample_page', 'sample_page', template_folder='templates')
 
 cluster = MongoClient('mongodb+srv://Ider:PrisonBreak@cluster0-m5dyv.mongodb.net/test?retryWrites=true&w=majority')
 db_users = cluster['Schoolbus']['users']
@@ -10,10 +13,24 @@ db_location = cluster['Schoolbus']['location']
 db_schools = cluster['Schoolbus']['schools']
 
 app = Flask(__name__)
+app.register_blueprint(sample_page, url_prefix='/')
 
 CORS(app, resources={r'/*': {'origins': '*'}})
 
+
+@app.route('/')
+def get_sample():
+    try:
+        return render_template('index.html')
+    except TemplateNotFound:
+	print ('template not found')
+        abort(404)
+
 # ___Dashboard backend___
+
+@app.route('/', methods=['GET'])
+def test():
+    return 'HELLO WORLD'
 
 @app.route('/dash_schools/<email>/<password>', methods=['GET', 'POST'])
 def dash_schools(email, password):
@@ -233,10 +250,6 @@ def buses(school):
     return jsonify(return_buses)
 
 
-# REST --- get list --> GET
-# REST --- /bus-stops --> get all
-# REST --- /bus-stops/:school_id --> get all bus stops by school id
-
 @app.route('/busStops/<school>/<busnumber>', methods=['GET'])
 def bus_stops(school, busnumber):
     my_school_query = {"username": school}
@@ -254,4 +267,4 @@ def insert():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0')
